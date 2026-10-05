@@ -7,15 +7,19 @@
 <body>    
     <script src="input-controller.js"></script>
     <script>
-        // console.log("InputController существует", typeof InputController === 'function');
-
         const myController = new InputController(
             { "testAction": { keys: [65], enabled: true } }, 
             document
         );
 
-        // console.log("Свойство enabled:", myController.enabled);
-        // console.log("Константа события:", myController.ACTION_ACTIVATED);
+        console.log("После создания:", myController.actions);
+
+        myController.bindActions({
+            "left": { keys: [37, 65] }, 
+            "jump": { keys: [32], enabled: true }
+        });
+        
+        console.log("После добавления:", myController.actions);
         
     </script>
 </body>

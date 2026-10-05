@@ -11,6 +11,10 @@ const InputController = (function () {
             this._onKeyDown = this._onKeyDown.bind(this);
             this._onKeyUp = this._onKeyUp.bind(this)
 
+            this.actions = {};
+
+            this.pressedKeys = []; // коды клавиш
+            this.activeActions = []; // название активных действий
 
             if (Object.keys(actionsToBind).length > 0) {
                 this.bindActions(actionsToBind);
@@ -25,7 +29,27 @@ const InputController = (function () {
         }
 
         bindActions(actionsToBind) {
-            console.log("bindActions вызван с:", actionsToBind);
+            for (let actionName in actionsToBind) {
+                let newConfig = actionsToBind[actionName];
+
+                if (!this.actions[actionName]){
+                    this.actions[actionName] = {
+                        keys: [],
+                        enabled: true,
+                    };
+                }
+                
+                if (newConfig.keys) {
+                    for ( let i = 0; i < newConfig.keys.length; i++) {
+                        let keyCode = newConfig.keys[i];
+                        let currentKeys = this.actions[actionName].keys;    
+
+                        if (!currentKeys.includes(keyCode)) {
+                            currentKeys.push(keyCode);
+                        }
+                    }
+                }
+            }
         }
 
         attach(target, dontEnable = false) {
@@ -41,20 +65,82 @@ const InputController = (function () {
         }
 
         detach() {
+            if (this.target) {
+                this.target.removeEventListener('keydown', this._onKeyDown);
+                this.target.removeEventListener('keyup', this._onKeyUp);
+                this.target = null;
 
-            this.target = null;
+            }
             this.enabled = false;
-
-            this.target.removeEventListener('keydown', this._onKeyDown);
-            this.target.removeEventListener('keyup', this._onKeyUp);
         }
-
+        
         _onKeyDown(e) {
             console.log('Нажата клавиша', e.keyCode);
+
+            if (!this.enabled || !this.focused) return;
+
+            let keyCode = e.keyCode;
+
+            if (!this.pressedKeys.includes(keyCode)) {
+                this.pressedKeys.push(keyCode);
+            }
+            this._evaulateActions();
         }
 
         _onKeyUp(e){
             console.log('Отжата клавиша', e.keyCode);
+
+            if (!this.enabled || !this.focused) return;
+
+            let keyCode = e.keyCode;
+
+            this.pressedKeys = this.pressedKeys.filter(function(key) {
+                return key !== keyCode;
+            });
+
+            this._evaulateActions();
+        }
+
+
+        _evaulateActions() {
+            for (let actionName in this.actions) {
+                let actionConfig = this.actions[actionName];
+
+                if (!actionConfig.enabled) continue;
+
+                let isPressed = false;
+                for (let i = 0; i < actionConfig.keys.length; i++) {
+                    let keyCode = actionConfig.keys[i];
+                    if (this.pressedKeys.includes(keyCode)) {
+                        isPressed = true;
+                        break;
+                    }
+                }
+                let wasAction = this.activeActions.includes(actionName);
+
+                if (isPressed && !wasAction) {
+                    this.activeActions.push(actionName);
+                    this._dispatchEvent(this.ACTION_ACTIVATED, actionName);
+                }
+
+                if (!isPressed && wasAction) {
+                    this.activeActions = this.activeActions.filter(function(name) {
+                        return name !== actionName;
+                    });
+
+                    this._dispatchEvent(this.ACTION_DEACTIVATED, actionName);
+                }    
+            }
+        }
+
+        _dispatchEvent(eventName, actionName) {
+            if (!this.target) return;
+
+            let event = new CustomEvent(eventName, {
+                detail: {action : actionName}
+            });
+
+            this.target._dispatchEvent(event);
         }
 
         _onWindowFocus() {
