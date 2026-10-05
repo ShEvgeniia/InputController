@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>InputController</title>
+</head>
+<body>    
+    <script src="input-controller.js"></script>
+    <script>
+        // console.log("InputController существует", typeof InputController === 'function');
+
+        const myController = new InputController(
+            { "testAction": { keys: [65], enabled: true } }, 
+            document
+        );
+
+        // console.log("Свойство enabled:", myController.enabled);
+        // console.log("Константа события:", myController.ACTION_ACTIVATED);
+        
+    </script>
+</body>
+</html>
